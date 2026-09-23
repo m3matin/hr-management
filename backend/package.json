@@ -1,0 +1,9 @@
+﻿{
+  "name": "hr-management-backend",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": { "dev": "nodemon server.js", "start": "node server.js", "test": "node --test" },
+  "dependencies": { "cors": "latest", "dotenv": "latest", "express": "latest", "pg": "^8.16.3" },
+  "devDependencies": { "nodemon": "latest" }
+}

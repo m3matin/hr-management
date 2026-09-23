@@ -1,0 +1,3 @@
+﻿import { EmployeeFilters } from '../components/EmployeeFilters.jsx';
+import { EmployeeTable } from '../components/EmployeeTable.jsx';
+export function EmployeesPage({ result, dashboard, filters, onFilters, onSelect, loading }) { return <><header className="page-header"><div><p className="eyebrow">Salary directory</p><h1>Employees</h1><p>Find an employee and manage their current compensation.</p></div></header><EmployeeFilters filters={filters} options={dashboard?.filters || { departments: [], countries: [] }} onChange={onFilters} />{loading ? <p>Loading employees…</p> : <EmployeeTable employees={result?.data || []} pagination={result?.pagination} onSelect={onSelect} onPage={(page) => onFilters({ ...filters, page })} />}</>; }
