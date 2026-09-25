@@ -21,7 +21,11 @@
 } from "@mui/material";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchEmployee, updateEmployeeSalary } from "../api/client";
+import {
+  fetchEmployee,
+  isCanceledRequest,
+  updateEmployeeSalary,
+} from "../api/client";
 import type { Employee, SalaryReason } from "../types";
 import {
   formatMoney,
@@ -54,21 +58,30 @@ export function EmployeeDetailPage() {
     reason: "RAISE",
   });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setError("");
 
-    try {
-      setEmployee(await fetchEmployee(id));
-    } catch {
-      setError("Employee could not be loaded.");
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
+      try {
+        setEmployee(await fetchEmployee(id, { signal }));
+      } catch (caught: unknown) {
+        if (!isCanceledRequest(caught)) {
+          setError("Employee could not be loaded.");
+        }
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
+      }
+    },
+    [id],
+  );
 
   useEffect(() => {
-    void load();
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   async function submit(event: FormEvent) {

@@ -33,6 +33,19 @@ client.interceptors.response.use(
   },
 );
 
+export interface RequestOptions {
+  signal?: AbortSignal;
+}
+
+export function isCanceledRequest(error: unknown): boolean {
+  return (
+    axios.isCancel(error) ||
+    (typeof DOMException !== "undefined" &&
+      error instanceof DOMException &&
+      error.name === "AbortError")
+  );
+}
+
 export const login = (email: string, password: string) =>
   client
     .post<{ token: string }>("/auth/login", { email, password })
@@ -40,6 +53,7 @@ export const login = (email: string, password: string) =>
 
 export const fetchEmployees = (
   params: Record<string, string | number | undefined>,
+  options?: RequestOptions,
 ) => {
   const definedParams = Object.fromEntries(
     Object.entries(params).filter(
@@ -48,12 +62,17 @@ export const fetchEmployees = (
   );
 
   return client
-    .get<EmployeeList>("/employees", { params: definedParams })
+    .get<EmployeeList>("/employees", {
+      params: definedParams,
+      signal: options?.signal,
+    })
     .then((response) => response.data);
 };
 
-export const fetchEmployee = (id: string) =>
-  client.get<Employee>(`/employees/${id}`).then((response) => response.data);
+export const fetchEmployee = (id: string, options?: RequestOptions) =>
+  client
+    .get<Employee>(`/employees/${id}`, { signal: options?.signal })
+    .then((response) => response.data);
 
 export const updateEmployeeSalary = (
   id: string,
@@ -67,17 +86,27 @@ export const updateEmployeeSalary = (
     .patch<SalaryHistory>(`/employees/${id}/salary`, body)
     .then((response) => response.data);
 
-export const fetchPayByGroup = (params: {
-  groupBy: string;
-  country?: string;
-}) =>
+export const fetchPayByGroup = (
+  params: {
+    groupBy: string;
+    country?: string;
+  },
+  options?: RequestOptions,
+) =>
   client
-    .get<{ data: PayGroup[] }>("/analytics/pay-by-group", { params })
+    .get<{ data: PayGroup[] }>("/analytics/pay-by-group", {
+      params,
+      signal: options?.signal,
+    })
     .then((response) => response.data);
 
-export const fetchPayrollTrend = (interval = "month") =>
+export const fetchPayrollTrend = (
+  interval = "month",
+  options?: RequestOptions,
+) =>
   client
     .get<{ data: TrendPoint[] }>("/analytics/payroll-trend", {
       params: { interval },
+      signal: options?.signal,
     })
     .then((response) => response.data);

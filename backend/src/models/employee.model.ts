@@ -93,6 +93,10 @@ Employee.init(
         name: "employees_status_idx",
         fields: ["status"],
       },
+      {
+        name: "employees_name_order_idx",
+        fields: ["last_name", "first_name", "id"],
+      },
     ],
   },
 );

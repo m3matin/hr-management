@@ -25,65 +25,123 @@ import {
   YAxis,
 } from "recharts";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchPayByGroup, fetchPayrollTrend } from "../api/client";
+import {
+  fetchPayByGroup,
+  fetchPayrollTrend,
+  isCanceledRequest,
+} from "../api/client";
 import { PayGroup, TrendPoint } from "../types";
 import { formatMoney } from "../utils/formatMoney";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 
 const chartColors = ["#2563eb", "#0f766e", "#7c3aed", "#ea580c", "#0891b2"];
+const formatTick = (value: number) => value.toLocaleString();
 
 export function DashboardPage() {
   const [groupBy, setGroupBy] = useState("country");
-  const [country, setCountry] = useState("");
+  const [countryInput, setCountryInput] = useState("");
+  const debouncedCountry = useDebouncedValue(countryInput, 400);
   const [groups, setGroups] = useState<PayGroup[]>([]);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loadingGroups, setLoadingGroups] = useState(true);
+  const [loadingTrend, setLoadingTrend] = useState(true);
+  const [groupError, setGroupError] = useState("");
+  const [trendError, setTrendError] = useState("");
+  const [refreshToken, setRefreshToken] = useState(0);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const loading = loadingGroups || loadingTrend;
+  const error = groupError || trendError;
+
+  const loadGroups = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoadingGroups(true);
+      setGroupError("");
+      try {
+        const pay = await fetchPayByGroup(
+          { groupBy, country: debouncedCountry || undefined },
+          { signal },
+        );
+        setGroups(pay.data);
+      } catch (caught: unknown) {
+        if (!isCanceledRequest(caught)) {
+          setGroupError(
+            "We couldn't load compensation analytics. Please try again.",
+          );
+        }
+      } finally {
+        if (!signal?.aborted) {
+          setLoadingGroups(false);
+        }
+      }
+    },
+    [debouncedCountry, groupBy],
+  );
+
+  const loadTrend = useCallback(async (signal?: AbortSignal) => {
+    setLoadingTrend(true);
+    setTrendError("");
     try {
-      const [pay, payroll] = await Promise.all([
-        fetchPayByGroup({ groupBy, country: country || undefined }),
-        fetchPayrollTrend(),
-      ]);
-      setGroups(pay.data);
+      const payroll = await fetchPayrollTrend("month", { signal });
       setTrend(payroll.data);
-    } catch {
-      setError("We couldn't load compensation analytics. Please try again.");
+    } catch (caught: unknown) {
+      if (!isCanceledRequest(caught)) {
+        setTrendError(
+          "We couldn't load compensation analytics. Please try again.",
+        );
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoadingTrend(false);
+      }
     }
-  }, [groupBy, country]);
+  }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    const controller = new AbortController();
+    void loadGroups(controller.signal);
+    return () => controller.abort();
+  }, [loadGroups, refreshToken]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadTrend(controller.signal);
+    return () => controller.abort();
+  }, [loadTrend, refreshToken]);
+
+  const retry = useCallback(() => {
+    setRefreshToken((current) => current + 1);
+  }, []);
 
   const currencies = useMemo(
     () => [...new Set(groups.map((item) => item.currency))],
     [groups],
   );
-  const trendByCurrency = useMemo(
-    () =>
-      trend.reduce<Record<string, TrendPoint[]>>((result, point) => {
-        (result[point.currency] ||= []).push(point);
-        return result;
-      }, {}),
-    [trend],
-  );
-  const employeeCount = groups.reduce(
-    (total, item) => total + item.employeeCount,
-    0,
+  const trendByCurrency = useMemo(() => {
+    const result: Record<string, Array<TrendPoint & { average: number }>> = {};
+    for (const point of trend) {
+      (result[point.currency] ||= []).push({
+        ...point,
+        average: Number(point.avgAmountMinor) / 100,
+      });
+    }
+    return result;
+  }, [trend]);
+
+  const employeeCount = useMemo(
+    () => groups.reduce((total, item) => total + item.employeeCount, 0),
+    [groups],
   );
 
-  const groupData = groups.map((row) => ({
-    ...row,
-    label: `${row.group} (${row.currency})`,
-    average: Number(row.avgAmountMinor) / 100,
-    median: Number(row.medianAmountMinor) / 100,
-  }));
-  const tickFormatter = (value: number) => value.toLocaleString();
+  const groupData = useMemo(
+    () =>
+      groups.map((row) => ({
+        ...row,
+        label: `${row.group} (${row.currency})`,
+        average: Number(row.avgAmountMinor) / 100,
+        median: Number(row.medianAmountMinor) / 100,
+      })),
+    [groups],
+  );
 
   if (loading && groups.length === 0) {
     return (
@@ -110,7 +168,7 @@ export function DashboardPage() {
         <Alert
           severity="error"
           action={
-            <button type="button" onClick={() => void load()}>
+            <button type="button" onClick={retry}>
               Retry
             </button>
           }
@@ -137,9 +195,9 @@ export function DashboardPage() {
             </FormControl>
             <TextField
               label="Country filter"
-              value={country}
+              value={countryInput}
               onChange={(event) =>
-                setCountry(event.target.value.toUpperCase().slice(0, 2))
+                setCountryInput(event.target.value.toUpperCase().slice(0, 2))
               }
               placeholder="e.g. US"
               inputProps={{ maxLength: 2 }}
@@ -208,7 +266,7 @@ export function DashboardPage() {
                   />
                   <YAxis
                     tick={{ fontSize: 12, fill: "#667085" }}
-                    tickFormatter={tickFormatter}
+                    tickFormatter={formatTick}
                     width={70}
                   />
                   <Tooltip
@@ -268,10 +326,7 @@ export function DashboardPage() {
                 <Box sx={{ height: 280, width: "100%" }}>
                   <ResponsiveContainer>
                     <LineChart
-                      data={points.map((point) => ({
-                        ...point,
-                        average: Number(point.avgAmountMinor) / 100,
-                      }))}
+                      data={points}
                       margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
                     >
                       <CartesianGrid stroke="#edf0f5" vertical={false} />
@@ -281,7 +336,7 @@ export function DashboardPage() {
                       />
                       <YAxis
                         tick={{ fontSize: 11, fill: "#667085" }}
-                        tickFormatter={tickFormatter}
+                        tickFormatter={formatTick}
                         width={62}
                       />
                       <Tooltip

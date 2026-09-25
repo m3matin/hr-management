@@ -22,6 +22,7 @@ describe("Sequelize model contract", () => {
           name: "employees_country_department_idx",
         }),
         expect.objectContaining({ name: "employees_status_idx" }),
+        expect.objectContaining({ name: "employees_name_order_idx" }),
       ]),
     );
   });
@@ -39,6 +40,13 @@ describe("Sequelize model contract", () => {
     );
     expect(SalaryHistory.getAttributes().reason.values).toEqual(
       expect.arrayContaining(Object.values(SalaryReason)),
+    );
+    expect(SalaryHistory.options.indexes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "salary_history_employee_effective_created_idx",
+        }),
+      ]),
     );
   });
 

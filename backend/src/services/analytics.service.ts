@@ -69,7 +69,7 @@ export async function payByGroup(groupBy: GroupBy, country?: string) {
     ORDER BY "group", s.currency
   `;
 
-  const [rows] = await sequelize.query<PayByGroupRow[]>(sql, {
+  const rows = await sequelize.query<PayByGroupRow>(sql, {
     replacements: country ? { country } : {},
     type: QueryTypes.SELECT,
   });
@@ -115,7 +115,7 @@ export async function payrollTrend(interval: "month" | "quarter") {
     ORDER BY p.period, s.currency
   `;
 
-  const [rows] = await sequelize.query<PayrollTrendRow[]>(sql, {
+  const rows = await sequelize.query<PayrollTrendRow>(sql, {
     type: QueryTypes.SELECT,
   });
 

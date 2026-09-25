@@ -60,6 +60,10 @@ SalaryHistory.init(
         name: "salary_history_employee_effective_idx",
         fields: ["employee_id", "effective_date"],
       },
+      {
+        name: "salary_history_employee_effective_created_idx",
+        fields: ["employee_id", "effective_date", "created_at"],
+      },
     ],
   },
 );

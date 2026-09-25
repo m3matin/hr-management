@@ -42,6 +42,14 @@ describe("auth routes", () => {
       400,
     ));
 
+  it("rejects oversized JSON bodies", async () => {
+    const response = await request(app)
+      .post("/api/auth/login")
+      .send({ password: "x".repeat(33 * 1024) });
+
+    expect(response.status).toBe(413);
+  });
+
   it("rejects wrong password", async () =>
     expect(
       (
