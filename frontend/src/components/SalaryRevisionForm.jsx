@@ -1,6 +1,0 @@
-﻿import { useState } from 'react';
-export function SalaryRevisionForm({ employee, onSave, onCancel }) {
-  const [form, setForm] = useState({ salaryMinor: employee.salaryMinor, currency: employee.currency, effectiveDate: new Date().toISOString().slice(0, 10), reason: '' });
-  const submit = (event) => { event.preventDefault(); onSave({ ...form, salaryMinor: Math.round(Number(form.salaryMinor) * 100) }); };
-  return <form className="revision-form" onSubmit={submit}><h3>Record salary revision</h3><label>Annual salary<input type="number" min="1" required value={form.salaryMinor / 100} onChange={(e) => setForm({ ...form, salaryMinor: Number(e.target.value) * 100 })} /></label><label>Currency<input required maxLength="3" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })} /></label><label>Effective date<input type="date" required value={form.effectiveDate} onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })} /></label><label>Reason<input required value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="e.g. Annual review" /></label><div><button type="button" className="secondary" onClick={onCancel}>Cancel</button><button>Save revision</button></div></form>;
-}

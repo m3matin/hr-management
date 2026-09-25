@@ -1,6 +1,0 @@
-﻿import { formatMoney } from './EmployeeTable.jsx';
-import { SalaryRevisionForm } from './SalaryRevisionForm.jsx';
-export function EmployeeDrawer({ employee, history, editing, onClose, onEdit, onSave }) {
-  if (!employee) return null;
-  return <div className="drawer-backdrop" onMouseDown={onClose}><aside className="drawer" onMouseDown={(e) => e.stopPropagation()}><button className="close" onClick={onClose}>×</button><p className="eyebrow">{employee.employeeNumber}</p><h2>{employee.firstName} {employee.lastName}</h2><p>{employee.jobTitle} · {employee.department}</p>{editing ? <SalaryRevisionForm employee={employee} onSave={onSave} onCancel={() => onEdit(false)} /> : <><section className="current-pay"><small>Current annual salary</small><strong>{formatMoney(employee.salaryMinor, employee.currency)}</strong><span>Effective {employee.effectiveDate}</span><button onClick={() => onEdit(true)}>Record revision</button></section><h3>Salary history</h3><ul className="history">{history.map((item, index) => <li key={`${item.effectiveDate}-${index}`}><div><strong>{formatMoney(item.salaryMinor, item.currency)}</strong><span>{item.reason}</span></div><time>{item.effectiveDate}</time></li>)}</ul></>}</aside></div>;
-}

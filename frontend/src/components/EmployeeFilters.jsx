@@ -1,3 +1,0 @@
-﻿export function EmployeeFilters({ filters, options, onChange }) {
-  return <div className="filters"><input value={filters.search} onChange={(e) => onChange({ ...filters, search: e.target.value, page: 1 })} placeholder="Search name, email, or employee ID" /><select value={filters.department} onChange={(e) => onChange({ ...filters, department: e.target.value, page: 1 })}><option value="">All departments</option>{options.departments.map((item) => <option key={item}>{item}</option>)}</select><select value={filters.country} onChange={(e) => onChange({ ...filters, country: e.target.value, page: 1 })}><option value="">All countries</option>{options.countries.map((item) => <option key={item}>{item}</option>)}</select></div>;
-}
