@@ -1,13 +1,15 @@
-﻿module.exports = {
-  preset: "ts-jest/presets/default-esm",
+﻿process.env.TS_JEST_HOOKS = require.resolve("./jest-source-map-hook.cjs");
+
+module.exports = {
   testEnvironment: "node",
-  extensionsToTreatAsEsm: [".ts"],
   transform: {
     "^.+\\.tsx?$": [
       "ts-jest",
       {
-        diagnostics: {
-          ignoreCodes: [151002],
+        tsconfig: {
+          module: "CommonJS",
+          moduleResolution: "Node",
+          sourceMap: true,
         },
       },
     ],

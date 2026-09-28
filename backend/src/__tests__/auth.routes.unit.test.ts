@@ -1,4 +1,5 @@
-﻿import request from "supertest";
+﻿import { jest } from "@jest/globals";
+import request from "supertest";
 import { createApp } from "../app.js";
 import { sequelize } from "../database/sequelize.js";
 
